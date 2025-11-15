@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Station - Rostov-on-Don</title>
+    <link rel="stylesheet" href="https://unpkg.com/@sakun/system.css">
+    <style>
+        body {
+            background-color: #d3d3d3;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Chicago', sans-serif;
+        }
+        
+        .container {
+            width: 800px;
+            height: 480px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .window {
+            margin: 5px;
+            height: 100%;
+        }
+        
+        .window.active {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: calc(100% - 10px); /* Account for margin */
+        }
+        
+        .window-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 8px;
+            overflow: hidden; /* No scrolling */
+        }
+        
+        .weather-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #000;
+        }
+        
+        .location-section {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+        }
+        
+        .location-section h1 {
+            margin: 0;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        
+        .location-section div {
+            font-size: 0.8em;
+            color: #666;
+        }
+        
+        .date-time {
+            font-size: 0.85em;
+        }
+        
+        .content-container {
+            display: flex;
+            flex: 1;
+            gap: 10px;
+        }
+        
+        .weather-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .weather-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            margin-top: 5px;
+            flex: 1;
+            min-height: 0; /* Allow flex child to shrink */
+        }
+        
+        .current-weather {
+            text-align: center;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0; /* Allow flex child to shrink */
+        }
+        
+        .weather-icon {
+            font-size: 2.5em;
+            text-align: center;
+            margin: 5px 0;
+            flex: 0 0 auto;
+        }
+        
+        .temperature {
+            font-size: 2.5em;
+            font-weight: bold;
+            text-align: center;
+            margin: 5px 0;
+            flex: 0 0 auto;
+        }
+        
+        .condition {
+            text-align: center;
+            font-weight: bold;
+            margin: 5px 0;
+            font-size: 1em;
+            flex: 0 0 auto;
+        }
+        
+        .details {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 5px;
+            margin-top: 5px;
+            max-width: 200px;
+            margin-left: auto;
+            margin-right: auto;
+            flex: 0 0 auto;
+        }
+        
+        .news-block {
+            width: 35%;
+            padding: 6px;
+            border: 1px solid #ccc;
+            background-color: #f0f0f0;
+            overflow-y: auto;
+        }
+        
+        .news-block h3 {
+            margin-top: 0;
+            margin-bottom: 4px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 2px;
+            font-size: 0.85em;
+        }
+        
+        .news-item {
+            margin-bottom: 3px;
+            padding-bottom: 2px;
+            border-bottom: 1px solid #ddd;
+            font-size: 0.75em;
+            color: #000; /* Black font */
+        }
+        
+        .news-content {
+            color: #000; /* Black font */
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .loading-news {
+            text-align: center;
+            padding: 10px;
+            font-style: italic;
+            font-size: 0.8em;
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .weather-display {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 10px;
+        }
+        
+        .current-weather {
+            text-align: center;
+        }
+        
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 10px;
+            background-color: #f0f0f0;
+            border-top: 1px solid #ccc;
+            font-size: 0.8em;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Main Weather Window -->
+        <div class="window active">
+            <div class="title-bar">
+            </div>
+            
+            <div class="window-content">
+                <div class="weather-header">
+                    <div class="location-section">
+                        <h1>Rostov-on-Don</h1>
+                        <div>Russia</div>
+                    </div>
+                    <div class="date-time">
+                        <div id="current-date">Loading...</div>
+                    </div>
+                </div>
+                
+                <div class="content-container">
+                    <div class="weather-content">
+                        <div id="weather-content">
+                            <div class="loading">Loading weather data...</div>
+                        </div>
+                    </div>
+                    
+                    <div class="news-block">
+                        <h3>Top News</h3>
+                        <div id="news-content">
+                            <div class="loading-news">Loading news...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="status-bar">
+                <span id="last-updated">Weather data: Loading...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const LATITUDE = 47.2357;
+        const LONGITUDE = 39.7015;
+        const CITY = 'Rostov-on-Don';
+        
+        function updateDateTime() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
+            document.getElementById('current-date').textContent = now.toLocaleDateString('en-US', options);
+        }
+        
+        function getWeatherIcon(weatherCode) {
+            const iconMap = {
+                0: '☀️',
+                1: '⛅',
+                2: '☁️',
+                3: '☁️',
+                45: '🌫️',
+                48: '🌫️',
+                51: '🌦️',
+                53: '🌦️',
+                55: '🌦️',
+                56: '🌧️',
+                57: '🌧️',
+                61: '🌦️',
+                63: '🌧️',
+                65: '🌧️',
+                66: '🌧️',
+                67: '🌧️',
+                71: '❄️',
+                73: '❄️',
+                75: '❄️',
+                77: '❄️',
+                80: '🌦️',
+                81: '🌧️',
+                82: '🌧️',
+                85: '❄️',
+                86: '❄️',
+                95: '⛈️',
+                96: '⛈️',
+                99: '⛈️'
+            };
+            return iconMap[weatherCode] || '🌈';
+        }
+        
+        function toCelsius(celsius) {
+            return Math.round(celsius);
+        }
+        
+        async function fetchCurrentWeather() {
+            try {
+                const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m&timezone=auto`);
+                if (!response.ok) {
+                    throw new Error(`Weather API error: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('Weather API response:', data);
+                return data;
+            } catch (error) {
+                console.error('Error fetching weather data:', error);
+                document.getElementById('weather-content').innerHTML = '<div class="loading">Error loading weather data.</div>';
+                return null;
+            }
+        }
+        
+        function updateWeatherDisplay(data) {
+            if (!data || !data.current) return;
+            
+            const currentTemp = toCelsius(data.current.temperature_2m);
+            const feelsLike = data.current.apparent_temperature ? toCelsius(data.current.apparent_temperature) : currentTemp;
+            const windSpeed = Math.round(data.current.wind_speed_10m);
+            const windDirection = data.current.wind_direction_10m;
+            const weatherCode = data.current.weather_code;
+            
+            const weatherDescriptions = {
+                0: 'Clear sky',
+                1: 'Mainly clear',
+                2: 'Partly cloudy',
+                3: 'Overcast',
+                45: 'Fog',
+                48: 'Depositing rime fog',
+                51: 'Light drizzle',
+                53: 'Moderate drizzle',
+                55: 'Dense drizzle',
+                56: 'Light freezing drizzle',
+                57: 'Dense freezing drizzle',
+                61: 'Slight rain',
+                63: 'Moderate rain',
+                65: 'Heavy rain',
+                66: 'Light freezing rain',
+                67: 'Heavy freezing rain',
+                71: 'Slight snow fall',
+                73: 'Moderate snow fall',
+                75: 'Heavy snow fall',
+                77: 'Snow grains',
+                80: 'Slight rain showers',
+                81: 'Moderate rain showers',
+                82: 'Violent rain showers',
+                85: 'Slight snow showers',
+                86: 'Heavy snow showers',
+                95: 'Thunderstorm',
+                96: 'Thunderstorm with slight hail',
+                99: 'Thunderstorm with heavy hail'
+            };
+            const condition = weatherDescriptions[weatherCode] || 'Unknown';
+            
+            const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+            const windDirectionName = directions[Math.round(windDirection / 22.5) % 16];
+            
+            const weatherContent = `
+                <div class="weather-display">
+                    <div class="current-weather">
+                        <div class="weather-icon">${getWeatherIcon(weatherCode)}</div>
+                        <div class="temperature">${currentTemp}°C</div>
+                        <div class="condition">${condition}</div>
+                        
+                        <div class="details">
+                            <div class="detail-item">
+                                <span>Feels Like:</span>
+                                <span>${feelsLike}°C</span>
+                            </div>
+                            <div class="detail-item">
+                                <span>Wind:</span>
+                                <span>${windSpeed} km/h ${windDirectionName}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span>Visibility:</span>
+                                <span>10 km</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('weather-content').innerHTML = weatherContent;
+            document.getElementById('last-updated').textContent = `Weather data: Updated at ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
+        }
+        
+        async function translateText(text) {
+            try {
+                const encodedText = encodeURIComponent(text);
+                const translateUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ru&tl=en&dt=t&q=${encodedText}`;
+                
+                const response = await fetch(translateUrl);
+                const data = await response.json();
+                
+                if (data && data[0]) {
+                    return data[0].map(item => item[0]).join('');
+                } else {
+                    return text;
+                }
+            } catch (error) {
+                console.error('Translation error:', error);
+                return text;
+            }
+        }
+
+        async function fetchNews() {
+            try {
+                const newsUrl = 'https://saurav.tech/NewsAPI/top-headlines/category/general/ru.json';
+                
+                const response = await fetch(newsUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`News API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.articles && data.articles.length > 0) {
+                    const newsPromises = data.articles.slice(0, 5).map(async (article) => {
+                        const translatedTitle = await translateText(article.title);
+                        
+                        return {
+                            title: translatedTitle
+                        };
+                    });
+                    
+                    const newsData = await Promise.all(newsPromises);
+                    displayNews(newsData);
+                } else {
+                    document.getElementById('news-content').innerHTML = '<div class="news-item"><div class="news-content">No news available</div></div>';
+                }
+            } catch (error) {
+                console.error('Error fetching news:', error);
+                document.getElementById('news-content').innerHTML = '<div class="news-item"><div class="news-content">Unable to load news</div></div>';
+            }
+        }
+        
+        function displayNews(newsItems) {
+            const newsContainer = document.getElementById('news-content');
+            newsContainer.innerHTML = '';
+            
+            if (newsItems && newsItems.length > 0) {
+                newsItems.forEach(item => {
+                    const newsElement = document.createElement('div');
+                    newsElement.className = 'news-item';
+                    newsElement.innerHTML = `
+                        <div class="news-content">${item.title}</div>
+                    `;
+                    newsContainer.appendChild(newsElement);
+                });
+            } else {
+                newsContainer.innerHTML = '<div class="news-item"><div class="news-content">No news available</div></div>';
+            }
+        }
+        
+        async function loadWeather() {
+            updateDateTime();
+            
+            const data = await fetchCurrentWeather();
+            
+            if (data && data.current) {
+                updateWeatherDisplay(data);
+            }
+            
+            fetchNews();
+        }
+        
+        window.onload = function() {
+            loadWeather();
+        };
+    </script>
+</body>
+</html>
